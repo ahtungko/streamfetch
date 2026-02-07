@@ -18,9 +18,37 @@
 pipx install git+https://github.com/Rkorona/streamfetch.git
 ```
 
-## 使用方法
+## Web Interface (New!) 🌐
 
-安装完成后，直接在终端使用 `streamfetch` 或 `sf` 命令。
+StreamFetch now includes a modern Web UI for easier searching and downloading.
+
+### 快速开始
+
+1.  **安装依赖**:
+    ```bash
+    pip install poetry
+    poetry install
+    ```
+
+2.  **启动 Web 服务**:
+    ```bash
+    poetry run python run_web.py
+    ```
+
+3.  **访问**:
+    打开浏览器访问: `http://localhost:8000`
+
+### 功能特性
+- **交互式搜索**: 实时搜索 Tidal 乐库。
+- **一键下载**: 点击即下，支持队列管理。
+- **浏览器直连**: 下载完成后自动触发浏览器文件下载。
+- **无需配置 FFmpeg**: 内置 FFmpeg 支持，开箱即用。
+
+---
+
+## 命令行使用方法 (CLI)
+
+如果您更喜欢命令行，依然可以使用 `streamfetch` 或 `sf` 命令。
 
 ### 1. 交互式搜索
 
