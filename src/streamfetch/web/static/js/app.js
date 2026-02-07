@@ -11,6 +11,8 @@ const currentTitle = document.getElementById('currentTitle');
 const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const statusText = document.getElementById('statusText');
+const toastContainer = document.getElementById('toastContainer');
+const mobileQueueBtn = document.getElementById('mobileQueueBtn');
 
 let ws;
 
@@ -38,7 +40,7 @@ function connectWebSocket() {
 }
 
 function handleWsMessage(data) {
-    console.log("WS Message:", data);
+    // console.log("WS Message:", data);
     
     switch(data.type) {
         case 'queue_update':
@@ -48,8 +50,6 @@ function handleWsMessage(data) {
             updateProgressUI(data);
             break;
         case 'complete':
-            // Completion might be handled by queue_update automatically, 
-            // but we can use this for specific notifications
             if (data.downloadUrl) {
                 // Trigger download
                 const link = document.createElement('a');
@@ -59,18 +59,34 @@ function handleWsMessage(data) {
                 link.click();
                 document.body.removeChild(link);
                 
-                // Optional: Toast
-                const toast = document.createElement('div');
-                toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg animate-bounce';
-                toast.textContent = 'Saving to device...';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 3000);
+                showToast(`Download started: ${data.trackId}`, 'success');
             }
             break;
         case 'error':
-            alert(`Error: ${data.message}`);
+            showToast(`Error: ${data.message}`, 'error');
             break;
     }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgClass = type === 'error' ? 'bg-red-600' : 'bg-cyan-600';
+    const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+    
+    toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up transform transition-all duration-500`;
+    toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span class="font-medium">${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }
 
 // --- UI Updates ---
@@ -80,8 +96,6 @@ function updateQueueUI(queue, current) {
     if (current) {
         currentDownload.classList.remove('hidden');
         currentTitle.textContent = current.title;
-        // Reset progress if it's a new track? 
-        // We rely on 'progress' events for bar updates
     } else {
         currentDownload.classList.add('hidden');
         resetProgress();
@@ -90,7 +104,7 @@ function updateQueueUI(queue, current) {
     // Queue List
     queueList.innerHTML = '';
     if (queue.length === 0) {
-        queueList.innerHTML = '<p class="text-center text-gray-600 text-sm py-4">Queue is empty</p>';
+        queueList.innerHTML = '<p class="text-center text-slate-500 text-xs py-4">Queue is empty</p>';
         return;
     }
 
@@ -103,21 +117,27 @@ function updateQueueUI(queue, current) {
 }
 
 function updateProgressUI(data) {
+    const bar = document.getElementById('progressBar');
+    
+    // Handle different status types
     if (data.status === 'start') {
-        progressBar.style.width = '0%';
+        bar.style.width = '0%';
         progressText.textContent = '0%';
         statusText.textContent = 'Starting download...';
-    } else if (data.status === 'progress') {
+    } 
+    else if (data.status === 'progress') {
         const percent = Math.round((data.completed / data.total) * 100);
-        progressBar.style.width = `${percent}%`;
+        bar.style.width = `${percent}%`;
         progressText.textContent = `${percent}%`;
-        statusText.textContent = `Downloading...`;
-    } else if (data.status === 'processing') {
-        progressBar.style.width = '100%';
+        statusText.textContent = 'Downloading segments...';
+    } 
+    else if (data.status === 'processing') {
+        bar.style.width = '100%';
         progressText.textContent = '100%';
-        statusText.textContent = 'Processing metadata/muxing...';
-    } else if (data.status === 'finish') {
-        statusText.textContent = 'Done!';
+        statusText.textContent = `Processing: ${data.step}...`;
+    } 
+    else if (data.status === 'finish') {
+        statusText.textContent = 'Finalizing...';
     }
 }
 
@@ -134,7 +154,7 @@ async function performSearch() {
     const query = searchInput.value.trim();
     if (!query) return;
 
-    resultsList.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin text-cyan-500 text-2xl"></i></div>';
+    resultsList.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-cyan-500 text-3xl"></i><p class="mt-4 text-slate-400">Searching Tidal...</p></div>';
 
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -142,7 +162,7 @@ async function performSearch() {
         
         renderResults(data.results);
     } catch (e) {
-        resultsList.innerHTML = `<div class="text-center text-red-500 py-8">Error: ${e.message}</div>`;
+        resultsList.innerHTML = `<div class="col-span-full text-center text-red-400 py-8"><i class="fas fa-exclamation-triangle text-3xl mb-2"></i><p>Error: ${e.message}</p></div>`;
     }
 }
 
@@ -150,19 +170,39 @@ function renderResults(results) {
     resultsList.innerHTML = '';
     
     if (!results || results.length === 0) {
-        resultsList.innerHTML = '<div class="text-center text-gray-500 py-8">No results found</div>';
+        resultsList.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12"><p class="text-lg">No results found.</p></div>';
         return;
     }
 
     results.forEach(track => {
         const clone = resultTemplate.content.cloneNode(true);
+        
+        // Populate data
         clone.querySelector('.result-title').textContent = track.title;
         clone.querySelector('.result-artist').textContent = track.artist;
         clone.querySelector('.result-album').textContent = track.album;
         clone.querySelector('.result-quality').textContent = track.quality;
         
+        // Handle Album Art Placeholder (if we had URLs we would set img src)
+        // Currently we don't have direct image URLs in the search result object easily without proxying
+        // But we can try if the backend provides it. 
+        // For now, the placeholder icon is fine.
+        
         const btn = clone.querySelector('.download-btn');
-        btn.onclick = () => addToQueue(track);
+        btn.onclick = (e) => {
+            e.stopPropagation(); // Prevent card click if we add one later
+            
+            // Visual feedback
+            const icon = btn.querySelector('i');
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            addToQueue(track).then(() => {
+                icon.className = 'fas fa-check';
+                setTimeout(() => {
+                    icon.className = 'fas fa-download';
+                }, 2000);
+            });
+        };
         
         resultsList.appendChild(clone);
     });
@@ -180,11 +220,13 @@ async function addToQueue(track) {
         });
         
         if (response.ok) {
-            // Animation or toast could go here
-            console.log("Added to queue");
+            showToast(`Added to queue: ${track.title}`, 'success');
+        } else {
+            showToast('Failed to add to queue', 'error');
         }
     } catch (e) {
         console.error("Failed to add to queue", e);
+        showToast('Network error', 'error');
     }
 }
 
@@ -195,6 +237,27 @@ searchBtn.addEventListener('click', performSearch);
 searchInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') performSearch();
 });
+
+// Mobile Queue Toggle
+if (mobileQueueBtn) {
+    mobileQueueBtn.addEventListener('click', () => {
+        // Simple toggle for now, or just alert?
+        // Ideally we slide in a drawer. 
+        // For MVP redesign, let's just scroll to queue or toggle visibility class
+        const queueColumn = document.querySelector('.lg\\:block'); // select the queue container
+        if (queueColumn) {
+            queueColumn.classList.toggle('hidden');
+            queueColumn.classList.toggle('fixed');
+            queueColumn.classList.toggle('inset-0');
+            queueColumn.classList.toggle('bg-slate-900');
+            queueColumn.classList.toggle('z-50');
+            queueColumn.classList.toggle('p-4');
+            // This is a bit hacky for a "toggle", but suffices for "responsive" requirement if improved later.
+            // Better: use a real modal/drawer implementation. 
+            // I'll stick to non-modal for now to avoid complexity in one go.
+        }
+    });
+}
 
 // Init
 connectWebSocket();
