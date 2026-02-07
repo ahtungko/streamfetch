@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFetch - Tidal Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                StreamFetch
+            </h1>
+            <p class="text-gray-400 mt-2">High-Res Tidal Downloader</p>
+        </header>
+
+        <!-- Search Section -->
+        <div class="mb-8">
+            <div class="relative">
+                <input type="text" id="searchInput" 
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 pl-12 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+                    placeholder="Search for tracks, albums, or paste a link...">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                <button id="searchBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-1.5 rounded-md text-sm transition-colors">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="hidden mb-4 p-2 bg-yellow-900/50 text-yellow-200 text-sm rounded text-center">
+            Connecting to server...
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Results Column -->
+            <div class="md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4 text-cyan-400"><i class="fas fa-list mr-2"></i>Results</h2>
+                <div id="resultsList" class="space-y-3">
+                    <!-- Results will be injected here -->
+                    <div class="text-center text-gray-500 py-8">
+                        Enter a search term to begin
+                    </div>
+                </div>
+            </div>
+
+            <!-- Queue Column -->
+            <div class="md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 text-green-400"><i class="fas fa-tasks mr-2"></i>Queue</h2>
+                
+                <!-- Current Download -->
+                <div id="currentDownload" class="hidden bg-gray-800 rounded-lg p-4 mb-4 border border-cyan-500/30">
+                    <h3 class="font-medium text-sm text-cyan-300 mb-1">Downloading...</h3>
+                    <p id="currentTitle" class="text-sm font-bold truncate mb-2">Track Title</p>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5 mb-1">
+                        <div id="progressBar" class="bg-cyan-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span id="progressText">0%</span>
+                        <span id="statusText">Starting...</span>
+                    </div>
+                </div>
+
+                <!-- Queue List -->
+                <div id="queueList" class="bg-gray-800 rounded-lg p-2 min-h-[200px] max-h-[500px] overflow-y-auto space-y-2">
+                    <!-- Queue items -->
+                    <p class="text-center text-gray-600 text-sm py-4">Queue is empty</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="resultTemplate">
+        <div class="bg-gray-800 hover:bg-gray-750 p-3 rounded-lg flex justify-between items-center group transition-colors border border-transparent hover:border-gray-600">
+            <div class="flex-1 min-w-0 mr-4">
+                <h3 class="font-medium truncate text-white result-title">Title</h3>
+                <p class="text-sm text-gray-400 truncate result-artist">Artist</p>
+                <div class="flex items-center mt-1 space-x-2">
+                    <span class="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-300 result-quality">LOSSLESS</span>
+                    <span class="text-xs text-gray-500 result-album truncate">Album</span>
+                </div>
+            </div>
+            <button class="download-btn bg-gray-700 hover:bg-cyan-600 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <i class="fas fa-download text-sm"></i>
+            </button>
+        </div>
+    </template>
+    
+    <template id="queueItemTemplate">
+        <div class="bg-gray-700/50 p-2 rounded flex justify-between items-center text-sm">
+            <div class="truncate mr-2 flex-1">
+                <div class="font-medium text-gray-200 queue-title">Title</div>
+                <div class="text-xs text-gray-500 queue-artist">Artist</div>
+            </div>
+            <i class="fas fa-clock text-gray-600 text-xs"></i>
+        </div>
+    </template>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

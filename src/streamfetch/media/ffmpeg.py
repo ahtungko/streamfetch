@@ -1,13 +1,33 @@
 import subprocess
 import logging
 import os
+import shutil
 from streamfetch.config.settings import config
+import imageio_ffmpeg
 
 logger = logging.getLogger("streamfetch")
 
 
+def get_ffmpeg_binary():
+    configured_bin = config["ffmpeg"]["binary"]
+    
+    # Check if configured binary exists in PATH or is an absolute path
+    if shutil.which(configured_bin):
+        return configured_bin
+    
+    # If not found, try imageio-ffmpeg
+    try:
+        bundled_bin = imageio_ffmpeg.get_ffmpeg_exe()
+        if os.path.exists(bundled_bin):
+            logger.info(f"Using bundled FFmpeg: {bundled_bin}")
+            return bundled_bin
+    except Exception:
+        pass
+        
+    return configured_bin  # Fallback to configured value even if not found (let subprocess fail)
+
 def embed_metadata(audio_path, cover_path, lyrics_path, metadata, final_path):
-    ffmpeg_bin = config["ffmpeg"]["binary"]
+    ffmpeg_bin = get_ffmpeg_binary()
 
     args = [ffmpeg_bin, "-i", str(audio_path)]
 
@@ -33,7 +53,7 @@ def embed_metadata(audio_path, cover_path, lyrics_path, metadata, final_path):
             "-metadata",
             f"track={metadata['trackNumber']}",
             "-metadata",
-            "comment=Downloaded by StreamFetch",
+            "comment=Made with love by Jenny",
         ]
     )
 
