@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 from rich.console import Console
-import typer
+
 
 console = Console()
 
@@ -81,7 +81,15 @@ def get_config_path() -> Path:
     if cwd_config.exists():
         return cwd_config
 
-    app_dir = Path(typer.get_app_dir(APP_NAME))
+    # app_dir = Path(typer.get_app_dir(APP_NAME))
+    # Replace typer.get_app_dir with standard location
+    if sys.platform == "win32":
+        app_dir = Path(os.environ["APPDATA"]) / APP_NAME
+    elif sys.platform == "darwin":
+        app_dir = Path.home() / "Library" / "Application Support" / APP_NAME
+    else:
+        app_dir = Path.home() / ".config" / APP_NAME
+
     config_path = app_dir / "config.yml"
     
     return config_path

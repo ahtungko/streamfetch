@@ -12,12 +12,7 @@ app = FastAPI(title="StreamFetch Web", version="0.1.0")
 static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-# Mount downloads
-download_dir = Path(config["general"]["download_dir"])
-if not download_dir.is_absolute():
-    download_dir = Path.cwd() / download_dir
-download_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/downloads", StaticFiles(directory=str(download_dir)), name="downloads")
+
 
 # Templates
 templates_dir = Path(__file__).parent / "templates"

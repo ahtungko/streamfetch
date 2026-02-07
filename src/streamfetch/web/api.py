@@ -128,11 +128,17 @@ async def process_queue():
             
             download_url = None
             if final_path:
-                # Construct URL. Assuming download_dir is mounted at /downloads
-                # tailored for flat directory. If subdirs, we need relative path.
+                # Use the new file endpoint
+                # We need to make sure we can identify the file. 
+                # Ideally we pass a unique ID or relative path. 
+                # For security and simplicity, let's use the relative path but encode it safely if needed.
+                # Here we assume final_path is within download_dir.
                 try:
                     relative_path = final_path.relative_to(download_dir)
-                    download_url = f"/downloads/{relative_path.as_posix()}"
+                    # We will serve via /api/files/?path=... to handle subdirs if needed, or just flatten.
+                    # Let's simple use the full relative path string
+                    encoded_path = str(relative_path).replace("\\", "/")
+                    download_url = f"/api/files?path={encoded_path}"
                 except Exception:
                     pass
 
@@ -141,6 +147,24 @@ async def process_queue():
     finally:
         is_downloading = False
         await manager.broadcast({"type": "queue_update", "queue": [], "current": None})
+
+from fastapi.responses import FileResponse
+import os
+
+@router.get("/files")
+async def get_file(path: str, background_tasks: BackgroundTasks):
+    # Security check: ensure path is within download_dir
+    safe_path = (download_dir / path).resolve()
+    if not str(safe_path).startswith(str(download_dir.resolve())):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if not safe_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Schedule deletion after response
+    background_tasks.add_task(os.remove, safe_path)
+    
+    return FileResponse(safe_path, filename=safe_path.name)
 
 
 # --- Models ---
